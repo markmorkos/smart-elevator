@@ -1,6 +1,11 @@
 const express = require('express')
 const path = require('path')
 const { get } = require('request')
+const faceapi = require('face-api.js');
+const multer = require('multer'); // Импорт multer
+const fs = require('fs');
+const canvas = require('canvas');
+const { loadLabeledDescriptors } = require('./labeledDescriptors');
 
 const app = express()
 
@@ -48,7 +53,61 @@ app.post('/fetch_external_image', async (req, res) => {
   }
 })
 
-app.listen(3000, () => console.log('Listening on port 3000!'))
+
+
+////////////////////////////////////////////////////////////////////////
+const { Canvas, Image, ImageData } = canvas;
+faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+
+const upload = multer({ dest: 'uploads/' });
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use(express.static(viewsDir));
+app.use(express.static(path.join(__dirname, './public')));
+
+app.get('/', (req, res) => res.redirect('/face_detection'));
+app.get('/face_detection', (req, res) => res.sendFile(path.join(viewsDir, 'faceDetection.html')));
+
+const MODEL_URL = path.join(__dirname, 'models');
+async function initialize() {
+  await faceapi.nets.ssdMobilenetv1.loadFromDisk(MODEL_URL);
+  await faceapi.nets.faceLandmark68Net.loadFromDisk(MODEL_URL);
+  await faceapi.nets.faceRecognitionNet.loadFromDisk(MODEL_URL);
+  console.log('Модели загружены');
+
+  const labeledFaceDescriptors = await loadLabeledDescriptors();
+
+  app.post('/upload', upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).send('Файл изображения обязателен');
+      }
+
+      const imgPath = req.file.path;
+      const img = await canvas.loadImage(imgPath);
+
+      const detections = await faceapi.detectAllFaces(img)
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+
+      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
+      const results = detections.map(d => faceMatcher.findBestMatch(d.descriptor));
+
+      // Удаление временного файла изображения
+      fs.unlinkSync(imgPath);
+
+      res.json(results);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('Ошибка сервера');
+    }
+  });}
+////////////////////////////////////////////////////////////////////////
+
+app.listen(3000, () => console.log('Listening on port 3000!'));
+initialize();
 
 function request(url, returnBuffer = true, timeout = 10000) {
   return new Promise(function(resolve, reject) {
