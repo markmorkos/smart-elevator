@@ -3,7 +3,7 @@ const path = require('path');
 const canvas = require('canvas');
 
 async function loadLabeledDescriptors() {
-  const labels = ['face0'];
+  const labels = ['face0', 'face1', 'face2', 'face3', 'face4', 'face5', 'face6', 'face7', 'face8', 'face9'];
   return Promise.all(
     labels.map(async label => {
       const descriptors = [];
