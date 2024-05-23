@@ -1,5 +1,8 @@
 {
-  "scripts": {
+  "engines": {
+    "node": "18.17.1",
+    "npm": "8.19.3"
+  },  "scripts": {
     "start": "node server.js"
   },
   "author": "justadudewhohacks",
