@@ -2,6 +2,7 @@
   "author": "justadudewhohacks",
   "license": "MIT",
   "dependencies": {
-    "face-api.js": "../../"
+    "canvas": "^2.11.2",
+    "face-api.js": "file:../.."
   }
 }
