@@ -7,7 +7,7 @@ async function loadLabeledDescriptors() {
   return Promise.all(
     labels.map(async label => {
       const descriptors = [];
-      const imgPath = path.join(__dirname, 'images', `${label}.jpg`);
+      const imgPath = path.join(__dirname, 'images', `${label}.jpeg`);
       const img = await canvas.loadImage(imgPath);
       const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
       if (detections) {
